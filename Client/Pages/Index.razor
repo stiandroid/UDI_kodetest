@@ -1,0 +1,101 @@
+﻿@page "/"
+@inject ISoknadService SoknadService
+
+<PageTitle>UDI kodetest</PageTitle>
+
+<h3>Stian Sæthers UDI kodetest</h3>
+
+<p>Ved første gangs bruk, gå til <a href="/import">Importer data</a> for å lese inn testdata.</p>
+
+<EditForm Model="searchForm" OnSubmit="Search">
+    <div class="row">
+        <div class="col-4">
+            Sak-id:
+            <InputText @bind-Value="searchForm.SakId" class="form-control" />
+        </div>
+        <div class="col-8">
+            Person (navn eller e-postadresse):
+            <InputText @bind-Value="searchForm.PersonData" class="form-control" />
+        </div>
+    </div>
+    <p>
+        <button type="submit" class="btn btn-primary">
+            Søk
+        </button>
+    </p>
+</EditForm>
+
+@if (searchPerformed)
+{    
+    if (searchResult == null)
+    {
+        <span>Søker i databasen...</span>
+    }
+    else
+    {
+        if (searchResult.Count == 0)
+        {
+            <span>Fant ingen søknader i databasen.</span>
+        }
+        else
+        {
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Sak-id</th>
+                        <th>Søker</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var soknad in searchResult)
+                    {
+                        <tr>
+                            <td>@soknad.Sakid</td>
+                            <td>
+                                @soknad.Soker?.Etternavn,
+                                @soknad.Soker?.Fornavn
+                                @soknad.Soker?.Mellomnavn
+                            </td>
+                            <td>@soknad.Vedtak?.Status.ToString()</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    }
+}
+
+@code{
+    SearchForm searchForm = new();
+    List<Soknad>? searchResult;
+    bool searchPerformed = false;
+
+    async Task Search()
+    {
+        searchPerformed = true;
+        searchResult = new List<Soknad>();
+        if (searchForm.SakId != null && searchForm.SakId.Length > 0)
+        {
+            var sakSearchResult = await SoknadService.GetBySakId(searchForm.SakId);
+            if (sakSearchResult.Data != null)
+            {
+                searchResult.Add(sakSearchResult.Data);
+            }
+        }
+        if (searchForm.PersonData != null && searchForm.PersonData.Length > 0)
+        {            
+            var personDataSearchResult = await SoknadService.GetByPersonData(searchForm.PersonData);
+            if (personDataSearchResult.Data != null)
+            {
+                searchResult.AddRange(personDataSearchResult.Data);
+            }
+        }
+    }
+
+    private class SearchForm
+    {
+        public string SakId { get; set; } = string.Empty;
+        public string PersonData { get; set; } = string.Empty;
+    }
+}

@@ -1,0 +1,64 @@
+﻿@page "/import"
+@inject IJsonImportService JsonImportService
+@inject ISoknadService SoknadService
+
+<h3>Les inn testdata fra fil (testdata.json)</h3>
+
+@if (soknader == null)
+{
+    <span>Sjekker databasen...</span>
+}
+else
+{
+    <span>@(soknader.Count) søknader i databasen.</span>
+}
+
+<p>
+    <button @onclick="ReadFromFile"
+            type="button"
+            class="btn btn-primary">
+        Les inn data fra fil
+    </button>
+</p>
+<p>
+    Testdata leses inn fra filen 'testdata.json' og lagres i databasen.
+</p>
+
+@if (errorMessage != null)
+{
+    <div class="alert alert-danger">
+        @errorMessage
+    </div>
+}
+
+@code {
+    List<Soknad>? soknader;
+
+    string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await SoknadService.GetAll();
+        if (!result.Success)
+        {
+            errorMessage = result.Message;
+        }
+        else
+        { 
+            soknader = result.Data;
+        }
+    }
+
+    private async Task ReadFromFile()
+    {
+        var result = await JsonImportService.ReadFromFile();
+        if (!result.Success)
+        {
+            errorMessage = result.Message;
+        }
+        else
+        {
+            soknader = result.Data;
+        }
+    }
+}
